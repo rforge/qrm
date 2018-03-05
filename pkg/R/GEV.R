@@ -87,7 +87,7 @@ rGEV <- function(n, xi, mu = 0, sigma = 1){
   qGEV(U, xi, mu, sigma)
 }
 fit.GEV <- function(maxima, ...){
-  sigma0 <- sqrt((6. * var(maxima))/pi)
+  sigma0 <- sqrt(6. * var(maxima)) / pi
   mu0 <- mean(maxima) - 0.57722 * sigma0
   xi0 <- 0.1
   theta <- c(xi0, mu0, sigma0)
