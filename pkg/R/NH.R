@@ -76,6 +76,7 @@ fit.mNH <- function(data, symmetric = FALSE, case = c("NIG", "HYP"), kvalue = NA
   list(mix.pars = mix.pars, mu = mu, Sigma = Sigma, gamma = gamma, ll.max = ll, alt.pars = alt.pars,
        mean = mean, covariance = covariance, correlation = cor)
 }
+
 ## Univariate NIG/HYP
 fit.NH <- function(data, case = c("NIG", "HYP"), symmetric = FALSE, se = FALSE, ...){
   case <- match.arg(case)
@@ -131,10 +132,8 @@ fit.NH <- function(data, case = c("NIG", "HYP"), symmetric = FALSE, se = FALSE, 
   list(converged = converged, case = case, symmetric = symmetric, par.ests = par.ests, par.ses = par.ses,
        alt.pars = alt.pars, vcmatrix = vcmatrix, ll.max = ll.max)
 }
-##
-## Functions for optimisation
-##
-## EM algorithm
+
+## EM update for mu, Sigma, gamma (for fitting GIG-normal variance mixtures with (a variant of) the EM algorithm)
 EMupdate <- function(data, mix.pars, mu, Sigma, gamma, symmetric, scaling = TRUE, kvalue = 1){
   d <- dim(data)[2]
   n <- dim(data)[1]
@@ -142,32 +141,33 @@ EMupdate <- function(data, mix.pars, mu, Sigma, gamma, symmetric, scaling = TRUE
   chi <- mix.pars[2]
   psi <- mix.pars[3]
   Q <- mahalanobis(data,mu,Sigma)
-  Offset <- t(gamma) %*% solve(Sigma) %*% gamma
-  delta <- EGIG(d / 2 - lambda, psi + Offset, Q + chi)
+  Offset <- t(gamma) %*% solve(Sigma) %*% gamma # for t: 0
+  delta <- EGIG(d / 2 - lambda, psi + Offset, Q + chi) # for t: delta = EGIG ((d+nu)/2, 0, Q + nu) = E(1/W_i | X_i; theta)
   delta.bar <- mean(delta)
   eta <- EGIG(lambda - d / 2, Q + chi, psi + Offset)
   eta.bar <- mean(eta)
-  delta.matrix <- matrix(delta, nrow = n, ncol = d, byrow = FALSE)
+  delta.matrix <- matrix(delta, nrow = n, ncol = d, byrow = FALSE) # delta expanded to matrix (for matrix multiplication)
   if(symmetric == TRUE){
-    gamma <- rep(0, d)
+    gamma <- rep(0, d) # ... e.g., for t
   } else {
     Xbar <- apply(data, 2, mean)
     Xbar.matrix <- matrix(Xbar, nrow = n, ncol = d, byrow = TRUE)
     Xbar.matrix <- Xbar.matrix - data
     gamma <- apply(delta.matrix * Xbar.matrix, 2, sum) / (n * delta.bar * eta.bar - n)
   }
-  mu <- (apply(delta.matrix * data, 2, sum) / n - gamma) / delta.bar
+  mu <- (apply(delta.matrix * data, 2, sum) / n - gamma) / delta.bar # updated mu
   mu.matrix <- matrix(mu, nrow = n, ncol = d, byrow = TRUE)
-  standardised <- data - mu.matrix
-  tmp <- delta.matrix * standardised
-  Sigma <- (t(tmp) %*% standardised)/n - outer(gamma, gamma) * eta.bar
-  if(scaling){
+  standardised <- data - mu.matrix # (X - mu)^T
+  tmp <- delta.matrix * standardised # delta (X - mu)^T
+  Sigma <- (t(tmp) %*% standardised)/n - outer(gamma, gamma) * eta.bar # for t: delta (X - mu) (X - mu)^T
+  if(scaling){ # ... for Sigma to have constant determinant (here: 1; in MFE (2015, Algorithm 15.1): det(S)); scaling not used here
     scale.factor <- (det(Sigma) / kvalue)^(1 / d)
-    Sigma <- Sigma / scale.factor
+    Sigma <- Sigma / scale.factor # => det(Sigma) = det(Sigma) / (det(Sigma)^{1/d})^d = 1
   }
   list(mu = mu, Sigma = Sigma, gamma = gamma)
 }
-## MCECM
+
+## MCECM update of the mixture parameters
 MCECMupdate <- function(data, mix.pars, mu, Sigma, gamma, optpars, optfunc, xieval = FALSE, ...){
   d <- dim(data)[2]
   n <- dim(data)[1]
@@ -179,7 +179,7 @@ MCECMupdate <- function(data, mix.pars, mu, Sigma, gamma, optpars, optfunc, xiev
   delta <- EGIG(d / 2 - lambda, psi + Offset, Q + chi)
   eta <- EGIG(lambda - d / 2, Q + chi, psi + Offset)
   xi <- 0
-  if (xieval) xi <- ElogGIG(lambda - d / 2, Q + chi, psi + Offset)
+  if (xieval) xi <- ElogGIG(lambda - d / 2, Q + chi, psi + Offset) # for t: xi = E(log(W_i) | X_i; theta)
   thepars <- mix.pars[optpars]
   greek.stats <- list(delta = delta, eta = eta, xi = xi)
   optimout <- optim(par = thepars, fn = optfunc, mixparams = mix.pars, greeks = greek.stats, ...)
@@ -187,7 +187,8 @@ MCECMupdate <- function(data, mix.pars, mu, Sigma, gamma, optpars, optfunc, xiev
   ifelse(optimout$convergence == 0, conv <- TRUE, conv <- FALSE)
   list(mix.pars = mix.pars, conv, fit = optimout)
 }
-## MCECM
+
+## Helper function used in fit.mst() to do the MCECM update of the mixture parameters
 MCECM.Qfunc <- function(lambda, chi, psi, delta, eta, xi){
   out <- NA
   if((chi > 0) & (psi > 0)){

@@ -157,7 +157,9 @@ rGIG <- function(n, lambda, chi, psi, envplot = FALSE, messages = FALSE){
      return(tmp)
    }
 }
-## Fitting
+
+## E(X^k) for X ~ N^-(lambda, chi, psi); see MFE (2015, A.2.5)
+## Note: X ~ N^-(lambda, chi, psi) => 1/X ~ N^-(-lambda, psi, chi)
 EGIG <- function(lambda,chi,psi,k=1){
   if ((chi[1]>0) & (psi[1]>0)){
     term1 <- k*log(chi/psi)/2
@@ -168,24 +170,25 @@ EGIG <- function(lambda,chi,psi,k=1){
     alpha <- lambda
     beta <- psi/2
     out <- gamma(k + alpha) / (gamma(alpha) * beta^k)
-  } else if ((psi[1]==0) & (lambda <0)){
-    alpha <- -lambda
-    beta <- chi / 2
+  } else if ((psi[1]==0) & (lambda <0)){ # for t
+    alpha <- -lambda # = nu/2
+    beta <- chi / 2 # = nu/2
     out <- (gamma(alpha - k) * beta^k) / gamma(alpha)
   } else {
     stop("These GIG parameters are not allowed")
   }
   out
 }
-## Fitting log-GIG
+
+## E(log(X)) for X ~ N^-(lambda, chi, psi); see MFE (2015, A.2.5)
 ElogGIG <- function(lambda, chi, psi){
  if ((chi[1] == 0) & (lambda > 0)){
     alpha <- lambda
     beta <- psi / 2
     out <- psi(alpha) - log(beta)
-  } else if ((psi[1] == 0) & (lambda < 0)){
-    alpha <- -lambda
-    beta <- chi / 2
+  } else if ((psi[1] == 0) & (lambda < 0)){ # for t
+    alpha <- -lambda # = nu/2
+    beta <- chi / 2 # = nu/2
     out <- log(beta) - psi(alpha)
   } else {
     stop("Log Moment of general GIG not implemented")

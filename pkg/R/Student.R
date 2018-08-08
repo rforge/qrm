@@ -46,7 +46,7 @@ qst <- function(p, mu = 0, sd = 1, df, scale = FALSE){
 ## Fitting
 fit.mst <- function(data, nit = 2000, tol = 1e-10, ...){
   if(is.matrix(data) == FALSE) data <- as.matrix(data)
-  mix.pars <- c(-4, 8, 0)
+  mix.pars <- c(-4, 8, 0) # initial mixture parameters lambda, chi, psi; for t: lambda = -nu/2, chi = nu, psi = 0; see MFE (2015; Section 6.2.3)
   optpars <- c(2)
   optfunc <- function(thepars, mixparams, greeks){
     MCECM.Qfunc(-thepars / 2, thepars, mixparams[3], greeks[[1]], greeks[[2]], greeks[[3]])
@@ -54,37 +54,37 @@ fit.mst <- function(data, nit = 2000, tol = 1e-10, ...){
   n <- dim(data)[1]
   d <- dim(data)[2]
   Xbar <- apply(data, 2, mean)
-  mu <- Xbar
-  Sigma <- var(data)
-  gamma <- rep(0, d)
+  mu <- Xbar # initial mu
+  Sigma <- var(data) # initial Sigma
+  gamma <- rep(0, d) # initial gamma; for t: gamma = 0
   i <- 0
-  ll <-  sum(dmt(data, mix.pars[2], mu, Sigma, log = TRUE))
+  ll <-  sum(dmt(data, mix.pars[2], mu, Sigma, log = TRUE)) # initial log-likelihood
   closeness <- 100
   while ((closeness > tol) & (i < nit)){
     i <- i + 1
-    EMresult <- EMupdate(data, mix.pars, mu, Sigma, gamma, symmetric = TRUE, scaling = FALSE)
+    EMresult <- EMupdate(data, mix.pars, mu, Sigma, gamma, symmetric = TRUE, scaling = FALSE) # EM update of mu, Sigma, gamma; for t: mu, Sigma
     mu <- EMresult$mu
     Sigma <- EMresult$Sigma
     gamma <- EMresult$gamma
-    MCECMresult <- MCECMupdate(data, mix.pars, mu, Sigma, gamma, optpars, optfunc, xieval = TRUE, ...)
-    mix.pars <- MCECMresult$mix.pars
+    MCECMresult <- MCECMupdate(data, mix.pars, mu, Sigma, gamma, optpars, optfunc, xieval = TRUE, ...) # MCECM update of mixture parameters
+    mix.pars <- MCECMresult$mix.pars # updated mixture parameters
     mix.pars[1] <- -mix.pars[2] / 2
     conv <- MCECMresult$conv
     conv.type <- MCECMresult$convtype
-    ll.old <- ll
-    ll <-  sum(dmt(data, mix.pars[2], mu, Sigma, log = TRUE))
-    closeness <- abs((ll - ll.old) / ll.old)
+    ll.old <- ll # old log-likelihood
+    ll <-  sum(dmt(data, mix.pars[2], mu, Sigma, log = TRUE)) # updated log-likelihood
+    closeness <- abs((ll - ll.old) / ll.old) # tolerance (relative error between log-likelihoods)
   }
   lambda <- mix.pars[1]
   chi <- mix.pars[2]
   psi <- mix.pars[3]
   EW <- EGIG(lambda, chi, psi)
   EW2 <- EGIG(lambda, chi, psi, 2)
-  varW <- EW2 - EW^2
+  varW <- EW2 - EW^2 # var(W)
   Sigma <- forceSymmetric(Sigma)
   beta <- as.vector(solve(Sigma) %*% gamma)
   mean <- as.numeric(mu + EW * gamma)
-  covariance <- EW * Sigma + varW * outer(gamma, gamma)
+  covariance <- EW * Sigma + varW * outer(gamma, gamma) # for t: cov(X) = EW * Sigma
   if (d > 1){
     cor <- cov2cor(Sigma)
   } else {
