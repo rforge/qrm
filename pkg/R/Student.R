@@ -55,7 +55,7 @@ fit.mst <- function(data, nit = 2000, tol = 1e-10, ...){
   d <- dim(data)[2]
   Xbar <- apply(data, 2, mean)
   mu <- Xbar # initial mu
-  Sigma <- var(data) # initial Sigma
+  Sigma <- var(data) # initial Sigma; should (?) probably multiply with E(W) = E(GIG) = \sqrt{\chi/\psi} K_{\lambda+1}(\sqrt{\chi\psi}) / K_{\lambda}(\sqrt{\chi\psi}) based on the given \chi, \psi, \lambda
   gamma <- rep(0, d) # initial gamma; for t: gamma = 0
   i <- 0
   ll <-  sum(dmt(data, mix.pars[2], mu, Sigma, log = TRUE)) # initial log-likelihood
