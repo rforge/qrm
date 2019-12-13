@@ -37,7 +37,7 @@ dmnorm <- function(x, mu, Sigma, log = FALSE){
 }
 ## Fitting
 fit.norm <- function(data){
-  if(class(data) == "timeSeries")
+  if(any(class(data) %in% "timeSeries"))
     data <- series(data)
   if (is.matrix(data) == FALSE)
     data <- as.matrix(data)
@@ -57,7 +57,7 @@ fit.norm <- function(data){
 ## Joint Normality Test
 jointnormalTest <- function(data, dist = c("chisquare", "beta"), plot = TRUE){
   dist <- match.arg(dist)
-  if(class(data) == "timeSeries")
+  if(any(class(data) %in% "timeSeries"))
     data <- series(data)
   d <- dim(data)[2]
   n <- dim(data)[1]
@@ -83,7 +83,7 @@ jointnormalTest <- function(data, dist = c("chisquare", "beta"), plot = TRUE){
 }
 ## Mardia Test
 MardiaTest <- function(data){
-  if(class(data) == "timeSeries") data <- series(data)
+  if(any(class(data) %in% "timeSeries")) data <- series(data)
   d <- dim(data)[2]
   n <- dim(data)[1]
   Xbar <- apply(data, 2, mean)

@@ -42,14 +42,14 @@ extremalPP <- function(data, threshold = NA, nextremes = NA, ...){
 }
 ##
 unmark <- function(PP){
-  if (class(PP) != "MPP") stop("Not a marked point process")
+  if (!any(class(PP) %in% "MPP")) stop("Not a marked point process")
   PP$marks <- NULL
   class(PP) <- "PP"
   PP
 }
 ##
 plot.MPP <- function(x, ...){
-  if (class(x) != "MPP") stop("Not a marked point process")
+  if (!any(class(x) %in% "MPP")) stop("Not a marked point process")
   starttime <- x$starttime
   endtime <- x$endtime
   times <- x$times
@@ -60,7 +60,7 @@ plot.MPP <- function(x, ...){
 }
 ##
 plot.PP <- function(x,...){
-  if (class(x) != "PP") stop("Not a point process. Did you call unmark()?")
+  if (!any(class(x) %in% "PP")) stop("Not a point process. Did you call unmark()?")
   starttime <- x$starttime
   endtime <- x$endtime
   times <- x$times
@@ -86,7 +86,7 @@ fit.POT <- function(PP, markdens = "GPD", ...){
   names(par.ses) <- names(par.ests)
   names
   ll.max <- -par.ests * span + length(times) * log(par.ests)
-  if (class(PP)=="MPP"){
+  if (any(class(PP) %in% "MPP")){
     mark.model <- switch(markdens, GPD = fit.GPD(marks, 0, ...))
     par.ests <- c(par.ests, mark.model$par.ests)
     names(par.ests) <- c("lambda", names(mark.model$par.ests))
@@ -101,7 +101,7 @@ sePP.negloglik <- function(theta, PP, case){
    theta <- abs(theta)
    times <- PP$times
    marks <- PP$marks
-   if (class(PP) != "MPP") marks <- 0.0
+   if (!any(class(PP) %in% "MPP")) marks <- 0.0
    endtime <- PP$endtime
    starttime <- PP$starttime
    mu <- theta[1]
@@ -175,10 +175,9 @@ plot.sePP <- function(x, ...){
   case <- x$case
   anytimes <- starttime:endtime
   voltheta <- theta[-c(1, 2)]
-  evol <- volfunction(times, times, marks, voltheta, case)
-  intensity <- rep(0, length(anytimes))
-  intensity[which(anytimes %in% times, arr.ind = TRUE)]  <- theta[1] + theta[2] * evol
-  plot(anytimes, intensity, type = "l", xlim = range(starttime, endtime), xlab = "Time", ylab = "Intensity")
+  evol <- volfunction(anytimes, times, marks, voltheta, case)
+  intensity <- theta[1] + theta[2] * evol
+  plot(anytimes, intensity, type = "l", xlim = range(starttime, endtime), xlab = "Time", ylab = "Intensity",...)
   abline(h = length(times) / (endtime - starttime))
   return(invisible(list(times = anytimes, intensity = intensity)))
 }
@@ -191,7 +190,7 @@ fit.sePP <- function(PP, model = c("Hawkes", "ETAS"), mark.influence = TRUE, std
   marks <- PP$marks
   span <- endtime-starttime
   rate <- length(times) / span
-  if(!((class(PP) =="MPP") & mark.influence)){
+  if(!((any(class(PP) %in% "MPP")) & mark.influence)){
     case <- switch(model, Hawkes = 1, ETAS = 3)
     mark.influence=FALSE
   } else {
@@ -224,7 +223,7 @@ fit.sePP <- function(PP, model = c("Hawkes", "ETAS"), mark.influence = TRUE, std
 }
 ##
 fit.seMPP <- function(PP, markdens = "GPD", model = c("Hawkes", "ETAS"), mark.influence = TRUE, predictable = FALSE, std.errs = FALSE, ...){
-  if (class(PP) != "MPP") stop("Not marked point process data")
+  if (!any(class(PP) %in% "MPP")) stop("Not marked point process data")
   model <- match.arg(model)
   marks <- PP$marks
   groundmod <- fit.sePP(PP, model, mark.influence, std.errs)
