@@ -163,6 +163,7 @@ gamGPDboot(x, B, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
   \emph{Journal of Risk and Insurance}; accepted.
 }
 \examples{
+library(QRM)
 ## generate an example data set
 years <- 2003:2012 # years
 nyears <- length(years)

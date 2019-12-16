@@ -14,7 +14,7 @@
   Techniques and Tools} (henceforth: QRM). The S-Plus package
   \dQuote{QRMlib} has been made available the first author of the book
   and can be obtained by following the instructions on
-  \url{https://www.qrmtutorial.org/book}. A R port of
+  \url{https://www.qrmtutorial.org/books}. A R port of
   this package has been made available on CRAN by Scott Ulmann. However,
   the package failed the checks and hence has been moved to the
   CRAN archive (\pkg{QRMlib}, version 1.4.5.1 as of 04/25/2011). This

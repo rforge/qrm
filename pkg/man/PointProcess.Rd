@@ -124,6 +124,7 @@ volfunction(anytimes, times, marks, theta, model)
 
 \examples{
 ## Extremal PP
+library(QRM)
 data(sp500)
 l <- -returns(sp500) 
 lw <- window(l, start = "1995-12-31", end = end(l)) 

@@ -79,6 +79,7 @@ EMupdate(data, mix.pars, mu, Sigma, gamma, symmetric,
 }
 
 \examples{
+library(QRM)
 data(DJ)
 r <- returns(DJ) 
 s <- window(r[, "MSFT"], "1993-01-01", "2000-12-31")

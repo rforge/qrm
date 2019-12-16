@@ -38,6 +38,7 @@ jointnormalTest(data, dist = c("chisquare", "beta"), plot = TRUE)
 }
 
 \examples{
+library(QRM)
 BiDensPlot(func = dmnorm, mu = c(0, 0), Sigma = equicorr(2, -0.7))
 S <- equicorr(d = 3, rho = 0.7)
 data <- rmnorm(1000, Sigma = S)
