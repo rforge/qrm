@@ -21,7 +21,6 @@ data(FXGBP.df)
 
 \examples{
 data(FXGBP)
-tail(FXGBP)  
 }
 
 \keyword{datasets}
