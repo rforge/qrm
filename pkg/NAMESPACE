@@ -17,8 +17,6 @@
 useDynLib(QRM)
 
 
-### imports ####################################################################
-
 ## import
 import(Matrix)
 import(mvtnorm)
@@ -27,7 +25,7 @@ import(timeSeries)
 
 ## importFrom
 importFrom("graphics", "abline", "axis", "box", "contour", "legend",
-              "mtext", "par", "persp", "title")
+           "mtext", "par", "persp", "title")
 importFrom("methods", "is")
 importFrom("stats", "as.formula", "ave", "cor", "dexp", "dgamma",
            "dnorm", "dt", "fitted", "integrate", "ks.test",
@@ -42,14 +40,12 @@ importFrom("mgcv", gam, s)
 importFrom("timeDate", kurtosis)
 importFrom(Rcpp, evalCpp)
 
-### exports ####################################################################
-
 ## S3 methods
 S3method(plot, MPP)
 S3method(plot, PP)
 S3method(plot, sePP)
 
-## exports (a bit of 'grouping' wouldn't harm here)
+## exports 
 export(BiDensPlot,
        cal.beta,
        cal.claytonmix,
@@ -78,7 +74,6 @@ export(BiDensPlot,
        equicorr,
        ESnorm,
        ESst,
-       extremalPP,
        findthreshold,
        fit.AC,
        fit.binomial,
@@ -92,9 +87,6 @@ export(BiDensPlot,
        fit.mst,
        fit.NH,
        fit.norm,
-       fit.POT,
-       fit.seMPP,
-       fit.sePP,
        fit.st,
        fit.tcopula,
        hill,
@@ -112,9 +104,6 @@ export(BiDensPlot,
        pGPD,
        pGumbel,
        plotFittedGPDvsEmpiricalExcesses,
-       plot.MPP,
-       plot.PP,
-       plot.sePP,
        plotTail,
        pclaytonmix,
        pprobitnorm,
@@ -150,15 +139,10 @@ export(BiDensPlot,
        rmghyp,
        rmnorm,
        rmt,
-       seMPP.negloglik,
-       sePP.negloglik,
        showRM,
        Spearman,
-       stationary.sePP,
-       unmark,
-       volfunction,
        xiplot,
-## Export of defunct functions in QRMlib
+       ## Export of defunct functions in QRMlib
        mk.returns,
        aggregateMonthlySeries,
        aggregateQuarterlySeries,
@@ -176,10 +160,25 @@ export(BiDensPlot,
        fit.tcopula.rank,
        fit.GPDb,
        lbeta,
-       CovToCor
+       CovToCor,
+       ## Related to point processes
+       extremalPP,
+       unmark,
+       plot.MPP,
+       plot.PP,
+       fit.POT,
+       fit.seMPP,
+       fit.sePP,
+       plot.sePP,
+       seMPP.negloglik,
+       sePP.negloglik,
+       stationary.sePP,
+       volfunction
        )
 
-export(gamGPDfit, gamGPDboot, # main 'game'-related tools
-       get.GPD.fit, GPD.predict,
+export(gamGPDfit,
+       gamGPDboot, # main 'game'-related tools
+       get.GPD.fit,
+       GPD.predict,
        risk.measure,
        VaRbound)

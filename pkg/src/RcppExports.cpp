@@ -38,26 +38,10 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// SEprocExciteFunc
-NumericVector SEprocExciteFunc(NumericVector anytimes, NumericVector times, NumericVector marks, double theta, int model);
-RcppExport SEXP _QRM_SEprocExciteFunc(SEXP anytimesSEXP, SEXP timesSEXP, SEXP marksSEXP, SEXP thetaSEXP, SEXP modelSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type anytimes(anytimesSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type times(timesSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type marks(marksSEXP);
-    Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
-    Rcpp::traits::input_parameter< int >::type model(modelSEXP);
-    rcpp_result_gen = Rcpp::wrap(SEprocExciteFunc(anytimes, times, marks, theta, model));
-    return rcpp_result_gen;
-END_RCPP
-}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_QRM_rfrank", (DL_FUNC) &_QRM_rfrank, 2},
     {"_QRM_rgig", (DL_FUNC) &_QRM_rgig, 11},
-    {"_QRM_SEprocExciteFunc", (DL_FUNC) &_QRM_SEprocExciteFunc, 5},
     {NULL, NULL, 0}
 };
 

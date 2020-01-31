@@ -9,7 +9,3 @@ rgig <- function(n, r, s, p, k1, k2, lambda, chi, psi, s1, s2) {
     .Call('_QRM_rgig', PACKAGE = 'QRM', n, r, s, p, k1, k2, lambda, chi, psi, s1, s2)
 }
 
-SEprocExciteFunc <- function(anytimes, times, marks, theta, model) {
-    .Call('_QRM_SEprocExciteFunc', PACKAGE = 'QRM', anytimes, times, marks, theta, model)
-}
-

@@ -18,6 +18,18 @@
 \alias{fit.tcopula.rank}
 \alias{fit.GPDb}
 \alias{lbeta}
+\alias{extremalPP}
+\alias{unmark}
+\alias{plot.MPP}
+\alias{plot.PP}
+\alias{fit.POT}
+\alias{sePP.negloglik}
+\alias{seMPP.negloglik}
+\alias{volfunction}
+\alias{plot.sePP}
+\alias{fit.sePP}
+\alias{fit.seMPP}
+\alias{stationary.sePP}
 
 \docType{data}
 
@@ -61,7 +73,19 @@
   \code{signalSeries()} is defunct. use \code{series()} in package
   \pkg{timeSeries}.\cr  
   \code{symmetrize()} is defunct. use \code{forceSymmetric()} in package
-  \pkg{Matrix}.\cr 
+  \pkg{Matrix}.\cr
+  \code{extremalPP()} is defunct.\cr
+  \code{unmark()} is defunct.\cr
+  \code{plot.MPP()} is defunct.\cr
+  \code{plot.PP()} is defunct.\cr
+  \code{fit.POT()} is defunct.\cr
+  \code{sePP.negloglik()} is defunct.\cr
+  \code{seMPP.negloglik()} is defunct.\cr
+  \code{volfunction()} is defunct.\cr
+  \code{plot.sePP()} is defunct.\cr
+  \code{fit.sePP()} is defunct.\cr
+  \code{fit.seMPP()} is defunct.\cr
+  \code{stationary.sePP()} is defunct.
 }
 
 \keyword{data}

@@ -86,3 +86,52 @@ lbeta <- function(a, b){
   .Defunct(new = "lbeta()", package = "base",
            msg = "The function lbeta() previously contained in the package QRMlib has been removed. Use lbeta() of the base package instead.")
 }
+## Defunct Point Process Functions
+extremalPP <- function(data, threshold = NA, nextremes = NA, ...){
+  .Defunct(new = "", 
+           msg = "The function has been removed.")
+}
+unmark <- function(PP){
+  .Defunct(new = "", 
+           msg = "The function has been removed.")
+}
+plot.MPP <- function(x, ...){
+  .Defunct(new = "", 
+           msg = "The function has been removed.")
+}
+plot.PP <- function(x,...){
+  .Defunct(new = "", 
+           msg = "The function has been removed.")
+}
+fit.POT <- function(PP, markdens = "GPD", ...){
+  .Defunct(new = "", 
+           msg = "The function has been removed.")
+}
+sePP.negloglik <- function(theta, PP, case){
+  .Defunct(new = "", 
+           msg = "The function has been removed.")
+}
+seMPP.negloglik <- function(theta, PP, case, markdens){
+  .Defunct(new = "", 
+           msg = "The function has been removed.")
+}
+volfunction <- function(anytimes, times, marks, theta, model){
+  .Defunct(new = "", 
+           msg = "The function has been removed.")
+}
+plot.sePP <- function(x, ...){
+  .Defunct(new = "", 
+           msg = "The function has been removed.")
+}
+fit.sePP <- function(PP, model = c("Hawkes", "ETAS"), mark.influence = TRUE, std.errs = FALSE, ...){
+  .Defunct(new = "", 
+           msg = "The function has been removed.")
+}
+fit.seMPP <- function(PP, markdens = "GPD", model = c("Hawkes", "ETAS"), mark.influence = TRUE, predictable = FALSE, std.errs = FALSE, ...){
+  .Defunct(new = "", 
+           msg = "The function has been removed.")
+}
+stationary.sePP <- function(sePP){
+  .Defunct(new = "", 
+           msg = "The function has been removed.")
+}
