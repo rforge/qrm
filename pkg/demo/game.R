@@ -50,11 +50,10 @@ beta <- cbind(A = exp(rev(sq)) / (1+xi[,"A"]),
 
 if(FALSE){
 
-    require(mgcv)
     set.seed(271)
     ## dummy loss data
     z <- data.frame(year  = rep(2011:2013, each=5),
-                    group = sample(LETTERS[1:2], size=15, replace=TRUE),
+                    group = as.factor(sample(LETTERS[1:2], size=15, replace=TRUE)),
                     loss  = rexp(15))
     ## fitting
     ## note: ?gam says:
@@ -86,7 +85,7 @@ if(FALSE){
     ## => gam()$fitted.values is always of length nrow(z)
 
     ## predict (use se.fit=TRUE to obtain standard errors [=> $fit, $se.fit])
-    (newdata1 <- expand.grid(year=unique(z$year), group=levels(z$group))) # (year, group)
+    (newdata1 <- expand.grid(year=unique(z$year), group=unique(z$group))) # (year, group)
     (gamPred11 <- predict(gamFit1, newdata=newdata1)) # different for each (year, group) combi
     (gamPred21 <- predict(gamFit2, newdata=newdata1)) # equal for same years
 
@@ -98,7 +97,7 @@ if(FALSE){
     ## What happens if newdata contains more covariates?
     (gamPred13 <- predict(gamFit1, newdata=expand.grid(foo=1:3,
                                                        year=unique(z$year),
-                                                       group=levels(z$group))))
+                                                       group=unique(z$group))))
     ## => values for each of 'foo' are equal
     (gamPred22 <- predict(gamFit2, newdata=newdata2)) # similar to gamPred11 (exactly all covariates are used in newdata)
 
@@ -135,7 +134,7 @@ grpList <- mapply(rep, rgr, n, SIMPLIFY=FALSE)
 ## order: year 1, ..., year 1 (n[1,1]-often), year 10, ..., year 10 (n[nyrs,1]-often)
 ##        then c()'ed for each group
 x <- data.frame(year  = unlist(yearList),
-                group = unlist(grpList),
+                group = as.factor(unlist(grpList)), # required to be factor for gamGPDboot(); see below
                 loss  = unlist(lossList))
 
 ## remove values for one covariate combination (to make it more interesting)
@@ -267,8 +266,9 @@ if(file.exists(sfile)){
     bootGPD <- readRDS(sfile) # read the bootstrapped object
 } else {
     ## note: - see ?s -> by: a replicate of the smooth is produced for each factor level
-    ##       - this takes some minutes... get a coffee
     ##       - the result object will be stored in 'game.rds' in your working directory (~ 800MB!)
+    ##       - For the underlying gamGPDfitUp()'s gam() call to work properly, the 'by'
+    ##         variable (here: group) *must* be a factor
     bootGPD <- gamGPDboot(x, B=B, threshold=u, datvar="loss",
                           xiFrhs = ~ group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # interaction
                           nuFrhs = ~ group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # interaction

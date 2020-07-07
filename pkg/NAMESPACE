@@ -45,7 +45,7 @@ S3method(plot, MPP)
 S3method(plot, PP)
 S3method(plot, sePP)
 
-## exports 
+## exports
 export(BiDensPlot,
        cal.beta,
        cal.claytonmix,
@@ -177,7 +177,9 @@ export(BiDensPlot,
        )
 
 export(gamGPDfit,
-       gamGPDboot, # main 'game'-related tools
+       gamGPDboot,
+       get.gam.fit,
+       gam.predict,
        get.GPD.fit,
        GPD.predict,
        risk.measure,

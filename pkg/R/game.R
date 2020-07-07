@@ -227,6 +227,9 @@ gamGPDfitUp <- function(y, xi.nu, xiFrhs, nuFrhs, yname, adjust=TRUE, verbose=TR
     ##       when using gamGPDboot() is called with a small sample size
     xi.obj <- tryCatch(gam(xi.formula, data=y., weights=-rl.xixi., ...),
                        error=function(e) e) # updated xi object of type gamObject
+    ## Update on 2020-07-07: xi.formula's 'by' argument needs to be a factor! Otherwise:
+    ## Error in smoothCon(split$smooth.spec[[i]], data, knots, absorb.cons, scale.penalty = scale.penalty, : Can't find by variable
+    ## => see also https://stackoverflow.com/questions/45832928/gam-model-error
     if(is(xi.obj, "simpleError")) return(list())
     ## warning("gam() produced the error:", conditionMessage(xi.obj), " when fitting xi; propagate list() as result")
 
