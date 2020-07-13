@@ -103,6 +103,7 @@ fit.AC(Udata, name = c("clayton", "gumbel"), initial = 2, ...)
 }
 
 \examples{
+\dontrun{
 ## Gumbel
 r1 <- rAC("gumbel", n = 50, d = 7, theta = 3)
 head(r1)
@@ -136,6 +137,7 @@ Udata <- apply(rp, 2, edf, adjust = 1)
 mod.gumbel <- fit.AC(Udata, "gumbel")
 mod.clayton <- fit.AC(Udata, "clayton")
 mod.clayton
+}
 }
 
 \keyword{distribution}
