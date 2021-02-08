@@ -14,15 +14,15 @@
   Davison (2005).
 }
 \usage{
-gamGPDfit(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
+gamGPDfit(x, threshold, nextremes = NULL, datvar, etaFrhs, nuFrhs,
           init = fit.GPD(x[,datvar], threshold = threshold,
                          type = "pwm", verbose = FALSE)$par.ests,
-          niter = 32, include.updates = FALSE, eps.xi = 1e-05, eps.nu = 1e-05,
+          niter = 32, include.updates = FALSE, eps.eta = 1e-05, eps.nu = 1e-05,
           progress = TRUE, adjust = TRUE, verbose = FALSE, \dots)
-gamGPDboot(x, B, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
+gamGPDboot(x, B, threshold, nextremes = NULL, datvar, etaFrhs, nuFrhs,
            init = fit.GPD(x[,datvar], threshold = threshold,
                           type = "pwm", verbose = FALSE)$par.ests,
-           niter = 32, include.updates = FALSE, eps.xi = 1e-5, eps.nu = 1e-5,
+           niter = 32, include.updates = FALSE, eps.eta = 1e-5, eps.nu = 1e-5,
            boot.progress = TRUE, progress = FALSE, adjust = TRUE, verbose = FALSE,
            debug = FALSE, \dots)
 }
@@ -36,8 +36,8 @@ gamGPDboot(x, B, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
   \item{nextremes}{number of excesses. This can be used to determine}
   \item{datvar}{name of the data column in \code{x} which contains the
      the data to be modeled.}
-  \item{xiFrhs}{right-hand side of the formula for \eqn{\xi}{xi} in
-    the \code{gam()} call for fitting \eqn{\xi}{xi}.}
+  \item{etaFrhs}{right-hand side of the formula for \eqn{\eta}{eta} in
+    the \code{gam()} call for fitting \eqn{\eta}{eta}.}
   \item{nuFrhs}{right-hand side of the formula for \eqn{\nu}{nu} in
     the \code{gam()} call for fitting \eqn{\nu}{nu}.}
   \item{init}{bivariate vector containing initial values
@@ -45,9 +45,9 @@ gamGPDboot(x, B, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
   \item{niter}{maximal number of iterations in the backfitting
     algorithm.}
   \item{include.updates}{\code{\link{logical}} indicating whether
-  updates for xi and nu are returned as well (note: this might lead to
+  updates for eta and nu are returned as well (note: this might lead to
   objects of large size).}
-  \item{eps.xi}{epsilon for stop criterion for \eqn{\xi}{xi}.}
+  \item{eps.eta}{epsilon for stop criterion for \eqn{\eta}{eta}.}
   \item{eps.nu}{epsilon for stop criterion for \eqn{\nu}{nu}.}
   \item{boot.progress}{\code{\link{logical}} indicating
     whether progress information about \code{gamGPDboot()} is displayed.}
@@ -73,32 +73,33 @@ gamGPDboot(x, B, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
   \describe{
     \item{\code{xi}:}{estimated parameters \eqn{\xi}{xi};}
     \item{\code{beta}:}{estimated parameters \eqn{\beta}{beta};}
+    \item{\code{eta}:}{estimated parameters \eqn{\eta}{eta};}
     \item{\code{nu}:}{estimated parameters \eqn{\nu}{nu};}
-    \item{\code{se.xi}:}{standard error for \eqn{\xi}{xi} ((possibly
+    \item{\code{se.eta}:}{standard error for \eqn{\eta}{eta} ((possibly
       adjusted) second-order derivative of the reparameterized
-      log-likelihood with respect to \eqn{\xi}{xi}) multiplied by -1;}
+      log-likelihood with respect to \eqn{\eta}{eta}) multiplied by -1;}
     \item{\code{se.nu}:}{standard error for \eqn{\nu}{nu} ((possibly
       adjusted) second-order derivative of the reparameterized
       log-likelihood with respect to \eqn{\nu}{nu}) multiplied by -1;}
-    \item{\code{xi.covar}:}{(unique) covariates for \eqn{\xi}{xi};}
+    \item{\code{eta.covar}:}{(unique) covariates for \eqn{\eta}{eta};}
     \item{\code{nu.covar}:}{(unique) covariates for \eqn{\nu}{nu};}
     \item{\code{covar}:}{available covariate combinations used for
-      fitting \eqn{\beta}{beta} (\eqn{\xi}{xi}, \eqn{\nu}{nu});}
+      fitting \eqn{\beta}{beta} (\eqn{\eta}{eta}, \eqn{\nu}{nu});}
     \item{\code{y}:}{vector of excesses (exceedances minus threshold);}
     \item{\code{res}:}{residuals;}
     \item{\code{MRD}:}{mean relative distances between for all
-      iterations, calculated between old parameters \eqn{(\xi, \nu)}{(xi,
+      iterations, calculated between old parameters \eqn{(\eta, \eta)}{(eta,
 	nu)} (from the last iteration) and new parameters (currently
       estimated ones);}
     \item{\code{logL}:}{log-likelihood at the estimated parameters;}
-    \item{\code{xiObj}:}{\R object of type \code{gamObject} for estimated
-    \eqn{\xi}{xi} (returned by \code{mgcv::gam()});}
+    \item{\code{etaObj}:}{\R object of type \code{gamObject} for estimated
+    \eqn{\eta}{eta} (returned by \code{mgcv::gam()});}
     \item{\code{nuObj}:}{\R object of type \code{gamObject} for estimated
     \eqn{\nu}{nu} (returned by \code{mgcv::gam()});}
-    \item{\code{xiUpdates}:}{if \code{include.updates} is
-      \code{\link{TRUE}}, updates for \eqn{\xi}{xi} for each
+    \item{\code{etaUpdates}:}{if \code{include.updates} is
+      \code{\link{TRUE}}, updates for \eqn{\eta}{eta} for each
       iteration. This is a list of \R objects of type \code{gamObject}
-      which contains \code{xiObj} as last element;}
+      which contains \code{etaObj} as last element;}
     \item{\code{nuUpdates}:}{if \code{include.updates} is
       \code{\link{TRUE}}, updates for \eqn{\nu}{nu} for each
       iteration. This is a list of \R objects of type \code{gamObject}
@@ -125,17 +126,20 @@ gamGPDboot(x, B, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
   and \eqn{\beta}{beta} by \code{gamGPDfit()} is done via penalized maximum
   likelihood estimation, where the estimators are computed with a
   backfitting algorithm. In order to guarantee convergence of this
-  algorithm, a reparameterization of \eqn{\beta}{beta} in terms of the parameter
-  \eqn{\nu}{nu} is done via
-  \deqn{\beta=\exp(\nu)/(1+\xi).}{beta=exp(nu)/(1+xi).}
-  The parameters \eqn{\xi}{xi} and \eqn{\nu}{nu} (and thus
-  \eqn{\beta}{beta}) are allowed to depend on covariates (including
-  time) in a non- or semiparametric way, for example:
-  \deqn{\xi=\xi(\bm{x},t)=\bm{x}^{\top}\bm{\alpha}_{\xi}+h_{\xi}(t),}{xi=xi(x,t)=x^Talpha[xi]+h[xi](t),}
+  algorithm, reparameterizations of \eqn{\xi}{xi} and \eqn{\beta}{beta}
+  in terms of the parameters \eqn{\eta}{eta} and \eqn{\nu}{nu} are done
+  via
+  \deqn{\xi=\exp(\eta)-1}{xi=exp(eta)-1}
+  and
+  \deqn{\beta=\exp(\nu)/(1+\xi)=\exp(\nu-\eta).}{beta=exp(nu)/(1+xi)=exp(nu-eta).}
+  The parameters \eqn{\eta}{eta} and \eqn{\nu}{nu} (and thus
+  \eqn{\xi}{xi} and \eqn{\beta}{beta}) are allowed to depend on
+  covariates (including time) in a non- or semiparametric way, for example:
+  \deqn{\eta=\eta(\bm{x},t)=\bm{x}^{\top}\bm{\alpha}_{\eta}+h_{\eta}(t),}{eta=eta(x,t)=x^Talpha[eta]+h[eta](t),}
   \deqn{\nu=\nu(\bm{x},t)=\bm{x}^{\top}\bm{\alpha}_{\nu}+h_{\nu}(t),}{nu=nu(x,t)=x^Talpha[nu]+h[nu](t),}
   where \eqn{\bm{x}}{x} denotes the vector of covariates,
-  \eqn{\bm{\alpha}_{\xi}}{alpha[xi]}, \eqn{\bm{\alpha}_{\nu}}{alpha[nu]}
-  are parameter vectors and \eqn{h_{\xi}}{h[xi]}, \eqn{h_{\nu}}{h[nu]} are
+  \eqn{\bm{\alpha}_{\eta}}{alpha[eta]}, \eqn{\bm{\alpha}_{\nu}}{alpha[nu]}
+  are parameter vectors and \eqn{h_{\eta}}{h[eta]}, \eqn{h_{\nu}}{h[nu]} are
   regression splines. For more details, see the references and the source
   code.
 
@@ -163,7 +167,6 @@ gamGPDboot(x, B, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
   \emph{Journal of Risk and Insurance}; accepted.
 }
 \examples{
-library(QRM)
 ## generate an example data set
 years <- 2003:2012 # years
 nyears <- length(years)
@@ -189,13 +192,13 @@ x <- data.frame(covar=covar, time=time, value=value)
 ## fit
 eps <- 1e-3 # to decrease the run time for this example
 require(mgcv) # due to s()
-fit <- gamGPDfit(x, threshold=u, datvar="value", xiFrhs=~covar+s(time)-1,
-                 nuFrhs=~covar+s(time)-1, eps.xi=eps, eps.nu=eps)
+fit <- gamGPDfit(x, threshold=u, datvar="value", etaFrhs=~covar+s(time)-1,
+                 nuFrhs=~covar+s(time)-1, eps.eta=eps, eps.nu=eps)
 ## note: choosing s(..., bs="cr") will fit cubic splines
 
 ## grab the fitted values per group and year
-xi.fit <- fitted(fit$xiObj)
-xi.fit. <- xi.fit[1+(0:(2*nyears-1))*n] # pick fit for each group and year
+xi.fit <- expm1(fitted(fit$etaObj))
+xi.fit. <- xi.fit[1+(0:(2*nyears-1))*n] # fit for each group and year
 xi.fit.A <- xi.fit.[1:nyears] # fit for "A" and each year
 xi.fit.B <- xi.fit.[(nyears+1):(2*nyears)] # fit for "B" and each year
 
@@ -215,4 +218,3 @@ legend("topleft", inset=0.04, lty=1, col=c("black", "blue"),
 \keyword{generalized Pareto distribution}
 \keyword{distribution}
 \keyword{multivariate}
-

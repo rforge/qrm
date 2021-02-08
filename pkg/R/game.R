@@ -16,7 +16,7 @@
 
 ## *G*eneralized *A*dditive *M*odeling for *E*xtremes
 ##
-## Remark:
+## Remarks:
 ## 1) Notation:
 ##    paper | Valerie's thesis | Valerie's former code | Coles' book + ismev
 ##      xi        -kappa                kappa                    xi
@@ -29,37 +29,39 @@
 ##    Note: in EKM, x ~> (x-nu)/beta (with the same meaning of beta)
 ## 3) GPD(xi, beta) density for xi>0:
 ##    g_{xi,beta}(x) = (1+xi*x/beta)^(-(1+1/xi))/beta if x>0
+## 4) We need xi > -1 in order for beta (= exp(nu) / (1+xi)) > 0. In comparison
+##    to Chavez-Demoulin, Embrechts, Hofert (2016), the below code was updated
+##    in 2021 ('QRM' version 0.4-33) to also include a reparameterization in xi
+##    (= exp(eta) - 1).
 
 
 ### Auxiliary functions ########################################################
 
-##' Reparameterized log-likelihood l^r(xi, nu; y_1,..,y_n) = l(xi, exp(nu)/(1+xi);
+##' Reparameterized log-likelihood l^r(eta, nu; y_1,..,y_n) = l(xi, beta;
+##' y_1,..,y_n) = l(exp(eta)-1, exp(nu)/(1+xi); y_1,..,y_n) = l(exp(eta)-1, exp(nu-eta);
 ##' y_1,..,y_n), where l(xi, beta; y_1,..,y_n) denotes the log-likelihood of a
 ##' GPD(xi, beta) distribution
 ##'
 ##' @title Reparameterized log-Likelihood l^r
 ##' @param y vector of excesses (over a high threshold u)
-##' @param xi GPD(xi,beta) vector of parameters xi
-##' @param nu GPD(xi, beta) vector of parameters nu (orthogonal in the Fisher
-##'        information metric to xi)
+##' @param eta vector of GPD(xi, beta) parameters eta (= log(1+xi))
+##' @param nu vector of GPD(xi, beta) parameters nu (= log(beta*(1+xi)) = log(beta)+eta)
+##'        (orthogonal to xi in the Fisher information metric)
 ##' @return reparametrized log-likelihood l^r
 ##' @author Marius Hofert
-rlogL <- function(y, xi, nu, verbose=TRUE)
+rlogL <- function(y, eta, nu, verbose = TRUE)
 {
-    ## checks
-    stopifnot((n <- length(y)) > 0, length(xi)==n, length(nu)==n)
-    ii <- xi <= -1
-    if(all(ii)) stop("Can't adjust xi <= -1 since there are no xi > -1") # beta = exp(nu)/(1+xi)
-    if(any(ii)) { # not a valid reparameterization either (for all xi <= -1) but we make it one
-        perc <- 100*sum(ii)/length(ii) # percentage of xi <= -1
-        if(verbose) warning(round(perc,2), "% of all xi are <= -1 and are adjusted to be > -1")
-        xi[ii] <- mean(xi[!ii])
-    }
-
-    ## set up result
+    stopifnot((n <- length(y)) > 0, length(eta)==n, length(nu)==n)
+    ## Before reparametrization of xi
+    ## ii <- xi <= -1
+    ## if(all(ii)) stop("Can't adjust xi <= -1 since there are no xi > -1") # beta = exp(nu)/(1+xi)
+    ## if(any(ii)) { # not a valid reparameterization either (for all xi <= -1) but we make it one
+    ##     perc <- 100*sum(ii)/length(ii) # percentage of xi <= -1
+    ##     if(verbose) warning(round(perc,2), "% of all xi are <= -1 and are adjusted to be > -1")
+    ##     xi[ii] <- mean(xi[!ii])
+    ## }
+    xi <- expm1(eta)
     res <- rep(-Inf, n)
-
-    ## main
     ii <- (xi < 0 & (0 <= y & y < -exp(nu)/(xi*(1+xi)))) | (xi > 0 & y >= 0)
     if(any(ii)) {
         xi. <- xi[ii]
@@ -73,13 +75,13 @@ rlogL <- function(y, xi, nu, verbose=TRUE)
 
 ##' @title Function to Adjust Derivatives
 ##' @param x vector of values (derivatives)
-##' @param order order of the derivatives to be adjusted
+##' @param order order of the derivatives to be adjusted (1, 2)
 ##' @param verbose logical indicating whether warnings about adjustments of
 ##'        the derivatives are printed
 ##' @return adjusted derivatives
 ##' @author Marius Hofert
 ##' Note: This is an auxiliary function of DrlogL()
-adjustD <- function(x, order, verbose=TRUE)
+adjustD <- function(x, order, verbose = TRUE)
 {
     stopifnot(order==1 || order==2)
 
@@ -110,37 +112,31 @@ adjustD <- function(x, order, verbose=TRUE)
 
 ##' @title Compute Derivatives of the Reparameterized log-Likelihood
 ##' @param y vector of excesses (over a high threshold u)
-##' @param xi vector of GPD(xi,beta) parameters xi
-##' @param nu vector of (orthogonal in the Fisher information metric)
-##'        GPD(xi, beta) parameters nu (> 0)
+##' @param eta vector of GPD(xi, beta) parameters eta (= log(1+xi))
+##' @param nu vector of GPD(xi, beta) parameters nu (= log(beta*(1+xi)) = log(beta)+eta)
+##'        (orthogonal to xi in the Fisher information metric)
 ##' @param adjust logical indicating whether non-real values of the derivatives are adjusted
 ##' @param verbose logical indicating whether modified arguments are printed
 ##' @return (n x 4) matrix containing the partial derivatives of the
 ##'         reparameterized log-likelihood l^r where
-##'         column 1: derivative of the reparameterized log-likelihood w.r.t. xi
+##'         column 1: derivative of the reparameterized log-likelihood w.r.t. eta
 ##'         column 2: derivative of the reparameterized log-likelihood w.r.t. nu
-##'         column 3: 2nd derivative of the reparameterized log-likelihood w.r.t. xi
+##'         column 3: 2nd derivative of the reparameterized log-likelihood w.r.t. eta
 ##'         column 4: 2nd derivative of the reparameterized log-likelihood w.r.t. nu
 ##' @author Marius Hofert
 ##' Note: Column 3 and 4 have different sign than in the old code
-DrlogL <- function(y, xi, nu, adjust=TRUE, verbose=TRUE)
+DrlogL <- function(y, eta, nu, adjust = TRUE, verbose = TRUE)
 {
-    ## checks
-    stopifnot((n <- length(y)) > 0, length(xi)==n, length(nu)==n)
-    if(any(ii <- xi <= -1)) { # not a valid reparameterization (but we make it one)
-        perc <- 100*sum(ii)/length(ii) # percentage of xi <= -1
-        if(verbose) warning(round(perc,2), "% of all xi are <= -1; truncated at -1 (=> beta = Inf)") # beta = exp(nu)/(1+xi)
-        xi <- pmax(xi, -1)
-    }
+    stopifnot((n <- length(y)) > 0, length(eta)==n, length(nu)==n)
 
-    ## set up result
-    res <- matrix(0, nrow=n, ncol=4,
-                  dimnames=list(NULL, c("rl.xi", "rl.nu", "rl.xixi", "rl.nunu")))
-
-    ## main
+    ## Main
+    res <- matrix(0, nrow = n, ncol = 4,
+                  dimnames = list(NULL, c("rl.eta", "rl.nu", "rl.etaeta", "rl.nunu")))
+    xi <- expm1(eta)
     ii <- (xi < 0 & (0 <= y & y < -exp(nu)/(xi*(1+xi)))) | (xi > 0 & y >= 0)
     if(any(ii)) {
         ## auxiliary terms
+        eta. <- eta[ii]
         xi. <- xi[ii]
         nu. <- nu[ii]
         y.  <-  y[ii]
@@ -148,9 +144,10 @@ DrlogL <- function(y, xi, nu, adjust=TRUE, verbose=TRUE)
         la <- log1p(xi.*(1+xi.)*exp(-nu.)*y.)
         a. <- exp(-nu.)*y.*(1+2*xi.)
         ## main
-        res[ii,"rl.xi"] <- 1/(1+xi.) + la/xi.^2 - (1+1/xi.)*a./a
-        res[ii,"rl.xixi"] <- -1/(1+xi.)^2 - 2*la/xi.^3 + 2*a./(a*xi.^2) -
-            (1+1/xi.)*exp(-nu.)*y. * (2*a - (1+2*xi.)^2 * exp(-nu.)*y.) / a^2
+        res[ii,"rl.eta"] <- exp(eta.)*(1/(1+xi.) + la/xi.^2 - (1+1/xi.)*a./a) # formerly: 1/(1+xi.) + la/xi.^2 - (1+1/xi.)*a./a
+        res[ii,"rl.etaeta"] <- exp(eta.)*(-1/(1+xi.)^2 - 2*la/xi.^3 + 2*a./(a*xi.^2) -
+                                          (1+1/xi.)*exp(-nu.)*y. * (2*a - (1+2*xi.)^2 * exp(-nu.)*y.) / a^2) +
+            exp(eta.)*(1/(1+xi.) + la/xi.^2 - (1+1/xi.)*a./a) # formerly: -1/(1+xi.)^2 - 2*la/xi.^3 + 2*a./(a*xi.^2) - (1+1/xi.)*exp(-nu.)*y. * (2*a - (1+2*xi.)^2 * exp(-nu.)*y.) / a^2
         res[ii,"rl.nu"] <- (-1+(1+xi.)*exp(-nu.)*y.) / a
         res[ii,"rl.nunu"] <- -(1+xi.)^2*y.*exp(-nu.)/a^2
     }
@@ -158,18 +155,18 @@ DrlogL <- function(y, xi, nu, adjust=TRUE, verbose=TRUE)
     if(any(ii)) {
         ## auxiliary terms
         ynu <- y[ii]*exp(-nu[ii])
-        res[ii,"rl.xi"] <- 0
-        res[ii,"rl.xixi"] <- 0
+        res[ii,"rl.eta"] <- 0
+        res[ii,"rl.etaeta"] <- 0
         res[ii,"rl.nu"] <- -1+ynu
         res[ii,"rl.nunu"] <- -ynu
     }
 
     ## replace non-finite derivatives by mean of all finite ones
     if(adjust) {
-        res[,"rl.xi"]   <- adjustD(res[,"rl.xi"],   order=1, verbose=verbose)
-        res[,"rl.xixi"] <- adjustD(res[,"rl.xixi"], order=2, verbose=verbose)
-        res[,"rl.nu"]   <- adjustD(res[,"rl.nu"],   order=1, verbose=verbose)
-        res[,"rl.nunu"] <- adjustD(res[,"rl.nunu"], order=2, verbose=verbose)
+        res[,"rl.eta"]    <- adjustD(res[,"rl.eta"],    order = 1, verbose = verbose)
+        res[,"rl.etaeta"] <- adjustD(res[,"rl.etaeta"], order = 2, verbose = verbose)
+        res[,"rl.nu"]     <- adjustD(res[,"rl.nu"],     order = 1, verbose = verbose)
+        res[,"rl.nunu"]   <- adjustD(res[,"rl.nunu"],   order = 2, verbose = verbose)
     }
 
     ## return
@@ -179,10 +176,9 @@ DrlogL <- function(y, xi, nu, adjust=TRUE, verbose=TRUE)
 ##' @title Compute Update (one Iteration) in gamGPDfit()
 ##' @param y data.frame containing the excesses over the threshold in a column
 ##'        labeled yname
-##' @param xi.nu 2-column matrix of GPD parameters (xi,nu) to be updated where
-##'        nu is orthogonal to xi in the Fisher information metric
-##' @param xiFrhs right-hand side of the formula for xi in the gam() call
-##'        for fitting xi
+##' @param eta.nu 2-column matrix of GPD parameters (eta, nu) to be updated
+##' @param etaFrhs right-hand side of the formula for eta in the gam() call
+##'        for fitting eta
 ##' @param nuFrhs right-hand side of the formula for nu in the gam() call
 ##'        for fitting nu
 ##' @param yname string containing the name of the column of y which contains
@@ -192,53 +188,53 @@ DrlogL <- function(y, xi, nu, adjust=TRUE, verbose=TRUE)
 ##'        the derivatives, wrong arguments in DrlogL() and failed gam() calls are printed
 ##' @param ... additional arguments passed to gam()
 ##' @return a list of length four containing
-##'         element 1 (xi): object of class gamObject for xi as returned by mgcv::gam()
+##'         element 1 (eta): object of class gamObject for eta as returned by mgcv::gam()
 ##'         element 2 (nu): object of class gamObject for nu as returned by mgcv::gam()
-##'         element 3 (xi.weights): weights associated with xi
+##'         element 3 (eta.weights): weights associated with eta
 ##'         element 4 (nu.weights): weights associated with nu
 ##'         or list() (in case gam() or the Newton step failed)
 ##' @author Marius Hofert
 ##' Note: That's a helper function of gamGPDfit()
-gamGPDfitUp <- function(y, xi.nu, xiFrhs, nuFrhs, yname, adjust=TRUE, verbose=TRUE, ...)
+gamGPDfitUp <- function(y, eta.nu, etaFrhs, nuFrhs, yname, adjust=TRUE, verbose=TRUE, ...)
 {
     stopifnot(is.data.frame(y), (dim. <- dim(y))[2] >= 1,
               length(which(colnames(y)==yname))==1,
-              (n <- dim.[1]) > 0, dim(xi.nu)==c(n, 2))
+              (n <- dim.[1]) > 0, dim(eta.nu)==c(n, 2))
 
-    ## pick out xi and nu (for readability)
-    xi <- xi.nu[,1]
-    nu <- xi.nu[,2]
+    ## pick out eta and nu (for readability)
+    eta <- eta.nu[,1]
+    nu  <- eta.nu[,2]
 
     ## compute one Newton step in xi
-    DrLL <- tryCatch(DrlogL(y[,yname], xi=xi, nu=nu, adjust=adjust, verbose=verbose), # (n1,4) matrix
-                     error=function(e) e)
+    DrLL <- tryCatch(DrlogL(y[,yname], eta = eta, nu = nu, adjust = adjust, verbose = verbose), # (n1,4) matrix
+                     error = function(e) e)
     if(is(DrLL, "simpleError")) return(list())
-    rl.xi <- DrLL[,"rl.xi"] # score in xi
-    rl.xixi. <- DrLL[,"rl.xixi"] # -weight
-    Newton.xi <- xi - rl.xi / rl.xixi. # Newton step
+    rl.eta <- DrLL[,"rl.eta"] # score in eta
+    rl.etaeta. <- DrLL[,"rl.etaeta"] # -weight
+    Newton.eta <- eta - rl.eta / rl.etaeta. # Newton step
 
-    ## concatenate Newton.xi and rl.xixi. to y, build formula, and estimate xi
-    if("Newton.xi" %in% colnames(y))
-        stop("y is not allowed to have a column named 'Newton.xi'")
-    y. <- cbind(y, Newton.xi=Newton.xi, rl.xixi.=rl.xixi.)
-    xi.formula <- update(xiFrhs, Newton.xi~.) # build formula Newton.xi ~ xiFrhs
+    ## concatenate Newton.eta and rl.etaeta. to y, build formula, and estimate eta
+    if("Newton.eta" %in% colnames(y))
+        stop("y is not allowed to have a column named 'Newton.eta'")
+    y. <- cbind(y, Newton.eta = Newton.eta, rl.etaeta. = rl.etaeta.)
+    eta.formula <- update(etaFrhs, Newton.eta~.) # build formula Newton.eta ~ etaFrhs
     ## note: the following tryCatch() was used to avoid the error
     ##       "no valid set of coefficients has been found: please supply starting values"
     ##       when using gamGPDboot() is called with a small sample size
-    xi.obj <- tryCatch(gam(xi.formula, data=y., weights=-rl.xixi., ...),
-                       error=function(e) e) # updated xi object of type gamObject
-    ## Update on 2020-07-07: xi.formula's 'by' argument needs to be a factor! Otherwise:
+    eta.obj <- tryCatch(gam(eta.formula, data = y., weights = -rl.etaeta., ...),
+                       error = function(e) e) # updated eta object of type gamObject
+    ## Update on 2020-07-07: eta.formula's 'by' argument needs to be a factor! Otherwise:
     ## Error in smoothCon(split$smooth.spec[[i]], data, knots, absorb.cons, scale.penalty = scale.penalty, : Can't find by variable
     ## => see also https://stackoverflow.com/questions/45832928/gam-model-error
-    if(is(xi.obj, "simpleError")) return(list())
-    ## warning("gam() produced the error:", conditionMessage(xi.obj), " when fitting xi; propagate list() as result")
+    if(is(eta.obj, "simpleError")) return(list())
+    ## warning("gam() produced the error:", conditionMessage(eta.obj), " when fitting eta; propagate list() as result")
 
-    ## build fitted (xi) object and check
-    xi.fit <- fitted(xi.obj)
+    ## build fitted (eta) object and check
+    eta.fit <- fitted(eta.obj)
 
-    ## compute one Newton step in nu (for given new xi)
-    DrLL <- tryCatch(DrlogL(y[,yname], xi=xi.fit, nu=nu, adjust=adjust, verbose=verbose), # (n1,4) matrix
-                     error=function(e) e)
+    ## compute one Newton step in nu (for given new eta)
+    DrLL <- tryCatch(DrlogL(y[,yname], eta = eta.fit, nu = nu, adjust = adjust, verbose = verbose), # (n1,4) matrix
+                     error = function(e) e)
     if(is(DrLL, "simpleError")) return(list())
     rl.nu <- DrLL[,"rl.nu"] # score in nu
     rl.nunu. <- DrLL[,"rl.nunu"] # -weight
@@ -249,14 +245,14 @@ gamGPDfitUp <- function(y, xi.nu, xiFrhs, nuFrhs, yname, adjust=TRUE, verbose=TR
         stop("y is not allowed to have a column named 'Newton.nu'")
     y. <- cbind(y, Newton.nu=Newton.nu, rl.nunu.=rl.nunu.)
     nu.formula <- update(nuFrhs, Newton.nu~.) # build formula Newton.nu ~ nuFrhs
-    nu.obj <- tryCatch(gam(nu.formula, data=y., weights=-rl.nunu., ...),
-                       error=function(e) e) # updated nu object of type gamObject
+    nu.obj <- tryCatch(gam(nu.formula, data = y., weights = -rl.nunu., ...),
+                       error = function(e) e) # updated nu object of type gamObject
     if(is(nu.obj, "simpleError")) return(list())
     ## warning("gam() produced the error:", conditionMessage(nu.obj), " when fitting nu; propagate list() as result")
 
-    ## return list of two gamObject objects (for xi, nu)
-    list(xi=xi.obj, nu=nu.obj, xi.weights=-rl.xixi., nu.weights=-rl.nunu.)
-    ## naming (xi, nu) not ideal but guarantees colnames(param.old) = colnames(param.new) in gamGPDfit()
+    ## return list of two gamObject objects (for eta, nu)
+    list(eta = eta.obj, nu = nu.obj, eta.weights = -rl.etaeta., nu.weights = -rl.nunu.)
+    ## naming (eta, nu) not ideal but guarantees colnames(param.old) = colnames(param.new) in gamGPDfit()
 }
 
 
@@ -270,16 +266,16 @@ gamGPDfitUp <- function(y, xi.nu, xiFrhs, nuFrhs, yname, adjust=TRUE, verbose=TR
 ##' @param nextremes number of excesses
 ##' @param datvar name of the data column which contains the data to be modeled,
 ##'        for example, the losses
-##' @param xiFrhs right-hand side of the formula for xi in the gam() call
-##'        for fitting xi
+##' @param etaFrhs right-hand side of the formula for eta in the gam() call
+##'        for fitting eta
 ##' @param nuFrhs right-hand side of the formula for nu in the gam() call
 ##'        for fitting nu
 ##' @param init bivariate vector containing initial values for (xi, beta)
 ##' @param niter maximal number of iterations in the backfitting algorithm
-##' @param include.updates logical indicating whether updates for xi and nu are
+##' @param include.updates logical indicating whether updates for eta and nu are
 ##'        returned as well
-##' @param eps.xi epsilon for stop criterion for xi
-##' @param eps.nu epsilon for stop criterion for nu
+##' @param eps.eta epsilon for stopping criterion for eta
+##' @param eps.nu epsilon for stopping criterion for nu
 ##' @param progress logical indicating whether progress information is displayed
 ##' @param adjust logical indicating whether non-real values of the derivatives are adjusted
 ##' @param verbose logical passed to gamGPDfitUp() (thus to DrlogL() and
@@ -287,13 +283,13 @@ gamGPDfitUp <- function(y, xi.nu, xiFrhs, nuFrhs, yname, adjust=TRUE, verbose=TR
 ##' @param ... additional arguments passed to gam() (called by gamGPDfitUp())
 ##' @return a list (see below) or list() (in case gam() or the Newton step in gamGPDfitUp() failed)
 ##' @author Marius Hofert
-gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
+gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, etaFrhs, nuFrhs,
                       init = fit.GPD(x[,datvar], threshold=threshold, type="pwm", verbose=FALSE)$par.ests,
-                      niter = 32, include.updates = FALSE, eps.xi = 1e-5, eps.nu = 1e-5,
+                      niter = 32, include.updates = FALSE, eps.eta = 1e-5, eps.nu = 1e-5,
                       progress = TRUE, adjust = TRUE, verbose = FALSE, ...)
 {
     ## checks
-    stopifnot(is.data.frame(x), length(init)==2, niter>=1, eps.xi>0, eps.nu>0)
+    stopifnot(is.data.frame(x), length(init) == 2, niter >= 1, eps.eta > 0, eps.nu > 0)
     has.threshold <- !missing(threshold)
     has.nextr <- !is.null(nextremes)
     if(has.threshold && has.nextr)
@@ -312,10 +308,11 @@ gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
     y.[,datvar] <- y.[,datvar] - threshold # replace excesses by excess sizes
     n.ex <- nrow(y.) # number of excesses
 
-    ## initial values for xi, beta, and nu (nu = reparameterization of beta)
+    ## initial values for xi, eta, beta, and nu (nu = reparameterization of beta)
     xi.init <- init[1]
     beta.init <- init[2]
     nu.init <- log((1+xi.init) * beta.init)
+    eta.init <- log(1+xi.init)
 
     ## iteration ###############################################################
 
@@ -323,14 +320,14 @@ gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
     updates <- list() # (empty) list of update (gamGPDfitUp) objects
     while(TRUE){
 
-        ## update/fit parameters (xi, nu)
+        ## update/fit parameters (eta, nu)
         param.old <- if(iter==1)
-            matrix(rep(c(xi.init, nu.init), each=n.ex), ncol=2,
-                       dimnames=list(rownames(y.), c("xi", "nu"))) # (n.ex,2)-matrix with cols "xi" and "nu"
+            matrix(rep(c(eta.init, nu.init), each=n.ex), ncol=2,
+                       dimnames=list(rownames(y.), c("eta", "nu"))) # (n.ex,2)-matrix with cols "eta" and "nu"
         else param.new
-        updates[[iter]] <- gamGPDfitUp(y., xi.nu=param.old,
-                                       xiFrhs=xiFrhs, nuFrhs=nuFrhs,
-                                       yname=datvar, adjust=adjust, verbose=verbose, ...) # returns a list of two gam() objects containing the fitted (xi, nu) (or list() in case a gam() call fails)
+        updates[[iter]] <- gamGPDfitUp(y., eta.nu = param.old,
+                                       etaFrhs = etaFrhs, nuFrhs = nuFrhs,
+                                       yname = datvar, adjust = adjust, verbose = verbose, ...) # returns a list of two gam() objects containing the fitted (eta, nu) (or list() in case a gam() call fails)
 
         ## check whether gam() calls failed
         if(!length(updates[[iter]])) {
@@ -338,30 +335,30 @@ gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
             return(list()) # one or both gam() calls in gamGPDfitUp() failed
         }
         ## check convergence status of gam() in gamGPDfitUp()
-        conv <- sapply(updates[[iter]][c("xi", "nu")], function(x) x$converged)
+        conv <- sapply(updates[[iter]][c("eta", "nu")], function(x) x$converged)
         if(any(!conv))
-            warning("gam() in gamGPDfitUp() did not converge for ", paste(c("xi","nu")[!conv], collapse=", "))
+            warning("gam() in gamGPDfitUp() did not converge for ", paste(c("eta","nu")[!conv], collapse=", "))
         ## check parameter dimensions (param.old and param.new have same rownames/colnames)
-        param.new <- sapply(updates[[iter]][c("xi", "nu")], fitted)
+        param.new <- sapply(updates[[iter]][c("eta", "nu")], fitted)
         if(any(dim(param.new)!=dim(param.old)))
             stop("gamGPDfitUp() returned an updated gamObject object of wrong dimension")
 
         ## tracing
-        MRD.. <- colMeans(abs((param.old-param.new)/param.old)) # mean relative distance for (xi, nu)
+        MRD.. <- colMeans(abs((param.old-param.new)/param.old)) # mean relative distance for (eta, nu)
         MRD. <- c(iter=iter, MRD..[1], MRD..[2])
         MRD <- if(iter==1) MRD. else rbind(MRD, MRD., deparse.level=0)
         if(progress){
             cat("Mean relative differences in iteration ", iter,
-                " (xi, nu): (", sprintf("%g", MRD..[1]), ", ",
+                " (eta, nu): (", sprintf("%g", MRD..[1]), ", ",
                 sprintf("%g", MRD..[2]), ")\n", sep="")
         }
 
         ## check for "convergence"
-        conv <- c(MRD..[1] <= eps.xi, MRD..[2] <= eps.nu)
+        conv <- c(MRD..[1] <= eps.eta, MRD..[2] <= eps.nu)
         if(all(conv)) break
         if(iter >= niter){
             if(progress) warning("Reached 'niter' without the required precision for ",
-                                 paste(c("xi","nu")[!conv], collapse=", "))
+                                 paste(c("eta","nu")[!conv], collapse=", "))
             break
         }
         iter <- iter + 1 # update iteration
@@ -371,13 +368,13 @@ gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
     ## finish and return #######################################################
 
     ## fitted parameters
-    xi <- param.new[,"xi"] # fitted xi's
+    eta <- param.new[,"eta"] # fitted eta's
+    xi <- expm1(eta)
     nu <- param.new[,"nu"] # fitted nu's
-    beta <- exp(nu)/(1+xi) # corresponding (fitted) beta
+    beta <- exp(nu)/(1+xi) # corresponding (fitted) beta (= exp(nu-eta))
 
     ## check beta for being a valid reparameterization (otherwise pGPD() fails)
-    ## note: nu can be too small (=> beta = 0) or xi <= -1
-    ##       => set corresponding beta to NA
+    ## note: nu can be too small (=> beta = 0) => set corresponding beta to NA
     ii <- is.finite(beta) & beta > 0
     beta[!ii] <- NA
 
@@ -386,22 +383,22 @@ gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
                    x=y.[,datvar], xi=xi, beta=beta)
 
     ## log-likelihood
-    logL <- rlogL(y=y.[,datvar], xi=xi, nu=nu) # reparameterized log-likelihood (reparameterization doesn't matter, it's the same *value* as the original log-likelihood)
+    logL <- rlogL(y=y.[,datvar], eta=eta, nu=nu) # reparameterized log-likelihood (reparameterization doesn't matter, it's the same *value* as the original log-likelihood)
 
-    ## fitted gamObjects for xi and nu and standard errors
+    ## fitted gamObjects for eta and nu and standard errors
     ## (contained in updates but for convenience we treat this additionally)
-    xiObj <- updates[[iter]]$xi
-    nuObj <- updates[[iter]]$nu
-    se.xi <- updates[[iter]]$xi.weights
-    se.nu <- updates[[iter]]$nu.weights
+    etaObj <- updates[[iter]]$eta
+    nuObj  <- updates[[iter]]$nu
+    se.eta <- updates[[iter]]$eta.weights
+    se.nu  <- updates[[iter]]$nu.weights
 
     ## determine *all* combinations of the provided covariates
-    ## xi
-    xi.covars <- names(xiObj$var.summary)
-    x.xi <- x[,xi.covars, drop=FALSE] # all cols with covariates used for fitting xi
-    all.covars.xi <- lapply(seq_len(ncol(x.xi)), function(j) sort(unique(x.xi[,j]))) # determine levels
+    ## eta
+    eta.covars <- names(etaObj$var.summary)
+    x.eta <- x[,eta.covars, drop = FALSE] # all cols with covariates used for fitting eta
+    all.covars.eta <- lapply(seq_len(ncol(x.eta)), function(j) sort(unique(x.eta[,j]))) # determine levels
     ## => we only can determine those which appear at least in one column
-    names(all.covars.xi) <- colnames(x.xi) # put in names
+    names(all.covars.eta) <- colnames(x.eta) # put in names
     ## nu
     nu.covars <- names(nuObj$var.summary)
     x.nu <- x[,nu.covars, drop=FALSE] # all cols with covariates used for fitting nu
@@ -411,19 +408,20 @@ gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
     ## build list
     res <- list(xi=xi, # estimated xi
                 beta=beta, # estimated beta
+                eta=eta, # estimated eta
                 nu=nu, # estimated nu
-                se.xi=se.xi, # standard error for xi
+                se.eta=se.eta, # standard error for eta
                 se.nu=se.nu, # standard error for nu
-                xi.covar=all.covars.xi, # (unique) covariates for xi
+                eta.covar=all.covars.eta, # (unique) covariates for eta
                 nu.covar=all.covars.nu, # (unique) covariates for nu
-                covar=y.[,union(xi.covars, nu.covars), drop=FALSE], # *available* (not necessarily all) covariate combinations used for fitting beta (= xi *and* nu)
+                covar=y.[,union(eta.covars, nu.covars), drop=FALSE], # *available* (not necessarily all) covariate combinations used for fitting beta (= eta *and* nu)
                 y=y.[,datvar], # excesses
                 res=resi, # residuals
-                MRD=MRD, # mean relative distances between old/new (xi, nu) for all iterations
+                MRD=MRD, # mean relative distances between old/new (eta, nu) for all iterations
                 logL=logL, # log-likelihood at the estimated parameters
-                xiObj=xiObj, # gamObject for estimated xi (return object of mgcv::gam())
+                etaObj=etaObj, # gamObject for estimated eta (return object of mgcv::gam())
                 nuObj=nuObj) # gamObject for estimated nu (return object of mgcv::gam())
-    if(include.updates) res <- c(res, xiUpdates=lapply(updates, `[[`, "xi"), # updates for xi for each iteration (list of gamObject objects); contains xiObj as last element
+    if(include.updates) res <- c(res, etaUpdates=lapply(updates, `[[`, "eta"), # updates for eta for each iteration (list of gamObject objects); contains etaObj as last element
                                  nuUpdates=lapply(updates, `[[`, "nu")) # updates for nu for each iteration (list of gamObject objects); contains nuObj as last element
 
     ## return
@@ -439,12 +437,12 @@ gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
 ##' @param threshold see gamGPDfit()
 ##' @param nextremes see gamGPDfit()
 ##' @param datvar see gamGPDfit()
-##' @param xiFrhs see gamGPDfit()
+##' @param etaFrhs see gamGPDfit()
 ##' @param nuFrhs see gamGPDfit()
 ##' @param init see gamGPDfit()
 ##' @param niter see gamGPDfit()
 ##' @param include.updates see gamGPDfit()
-##' @param eps.xi see gamGPDfit()
+##' @param eps.eta see gamGPDfit()
 ##' @param eps.nu see gamGPDfit()
 ##' @param boot.progress logical indicating whether progress information is displayed
 ##' @param progress see gamGPDfit() (only used if progress==TRUE)
@@ -457,9 +455,9 @@ gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
 ##'         objects based on the B bootstrap replications, but can be list() in case
 ##'         gamGPDfit() reports it (see there)
 ##' @author Marius Hofert
-gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
+gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, etaFrhs, nuFrhs,
                        init=fit.GPD(x[,datvar], threshold=threshold, type="pwm", verbose=FALSE)$par.ests,
-                       niter=32, include.updates=FALSE, eps.xi=1e-5, eps.nu=1e-5,
+                       niter=32, include.updates=FALSE, eps.eta=1e-5, eps.nu=1e-5,
                        boot.progress=TRUE, progress=FALSE, adjust=TRUE, verbose=FALSE,
                        debug=FALSE, ...)
 {
@@ -473,8 +471,8 @@ gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
 
     ## (major) fit using gamGPDfit()
     fit <- gamGPDfit(x=x, threshold=threshold, nextremes=nextremes, datvar=datvar,
-                     xiFrhs=xiFrhs, nuFrhs=nuFrhs, init=init, niter=niter,
-                     include.updates=include.updates, eps.xi=eps.xi, eps.nu=eps.nu,
+                     etaFrhs=etaFrhs, nuFrhs=nuFrhs, init=init, niter=niter,
+                     include.updates=include.updates, eps.eta=eps.eta, eps.nu=eps.nu,
                      progress=if(!boot.progress) FALSE else progress, adjust=adjust,
                      verbose=if(!boot.progress) FALSE else verbose, ...)
     ## => can be list() (if gam() in gamGPDfitUp() failed)
@@ -485,8 +483,9 @@ gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
     if(boot.progress) if(progress) cat("\n") else setTxtProgressBar(pb, 1)
 
     ## pick out fitted values
-    xi <- fit$xi # fitted xi
+    eta <- fit$eta # fitted eta
     nu <- fit$nu # fitted nu
+    xi <- expm1(eta) # fitted xi
     beta <- exp(nu)/(1+xi) # fitted beta
 
     ## for debugging
@@ -514,10 +513,10 @@ gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
         ## note: threshold=0 (since the data is x.!)
         ##       => we discard those excesses which are equal to 0
         bfitobj <- gamGPDfit(x=x., threshold=0, nextremes=nextremes, datvar="y",
-                             xiFrhs=xiFrhs, nuFrhs=nuFrhs,
+                             etaFrhs=etaFrhs, nuFrhs=nuFrhs,
                              init=fit.GPD(x.[,"y"], threshold=0, type="pwm", verbose=FALSE)$par.ests,
                              niter=niter, include.updates=include.updates,
-                             eps.xi=eps.xi, eps.nu=eps.nu,
+                             eps.eta=eps.eta, eps.nu=eps.nu,
                              progress=if(!boot.progress) FALSE else progress,
                              adjust=adjust,
                              verbose=if(!boot.progress) FALSE else verbose, ...)
@@ -733,47 +732,47 @@ get.GPD.fit <- function(x, alpha=0.05)
 ##'               predict: the predicted xi's
 ##'         beta: same as xi, just for beta; predicted values are based on beta.newdata
 ##' @author Marius Hofert
-GPD.predict <- function(x, xi.newdata=NULL, beta.newdata=NULL)
+GPD.predict <- function(x, xi.newdata = NULL, beta.newdata = NULL)
 {
     ## default for xi.newdata and beta.newdata
     if(is.null(xi.newdata)) { # choose useful default (covariates used for fitting but *all* combis of such)
-        xi.newdata <- if(length(x[[1]]$xi.covar)>0)
-            expand.grid(rev(x[[1]]$xi.covar))[,rev(seq_len(length(x[[1]]$xi.covar))), drop=FALSE]
+        xi.newdata <- if(length(x[[1]]$eta.covar)>0)
+            expand.grid(rev(x[[1]]$eta.covar))[,rev(seq_len(length(x[[1]]$eta.covar))), drop=FALSE]
         else data.frame(xi.dummy.covar=1)
     }
     if(is.null(beta.newdata)) {
-        fulllist <- c(x[[1]]$xi.covar, x[[1]]$nu.covar) # some may be duplicate
+        fulllist <- c(x[[1]]$eta.covar, x[[1]]$nu.covar) # some may be duplicate
         sublist <- fulllist[unique(names(fulllist))] # pick out maximal unique subset
-        beta.newdata <- if(length(x[[1]]$xi.covar)>0 || length(x[[1]]$nu.covar)>0)
+        beta.newdata <- if(length(x[[1]]$eta.covar)>0 || length(x[[1]]$nu.covar)>0)
             expand.grid(rev(sublist))[,rev(seq_len(length(sublist))), drop=FALSE] # build grid
         else data.frame(beta.dummy.covar=1)
     }
 
     ## check xi.newdata and beta.newdata (true for the default)
-    if(!all(names(x[[1]]$xi.covar) %in% colnames(xi.newdata)))
+    if(!all(names(x[[1]]$eta.covar) %in% colnames(xi.newdata)))
         stop("'xi.newdata' requires at least the covariates used for fitting xi via gamGPDfit()")
     if(!all(names(x[[1]]$covar) %in% colnames(beta.newdata)))
        stop("'beta.newdata' requires at least the covariates used for fitting beta via gamGPDfit()")
-    ## => implicitly also checks that beta.newdata contains the covariates of both xi and nu
+    ## => implicitly also checks that beta.newdata contains the covariates of both eta and nu
 
     ## predict
     ## note: - *.newdata can be of different length than fitted values
     ##         (can contain half-years etc.)
-    ##       - xi.newdata and beta.newdata can be of different length
+    ##       - eta.newdata and beta.newdata can be of different length
     ##         (depending on the covariates used for fitting, for example)
-    xi.pred      <- as.numeric(predict(x[[1]]$xiObj, newdata=xi.newdata)) # predict xi (for its own)
-    xi.pred.beta <- as.numeric(predict(x[[1]]$xiObj, newdata=beta.newdata)) # predict xi on beta.newdata
+    eta.pred      <- as.numeric(predict(x[[1]]$etaObj, newdata=xi.newdata)) # predict eta on xi.newdata
+    eta.pred.beta <- as.numeric(predict(x[[1]]$etaObj, newdata=beta.newdata)) # predict eta on beta.newdata
     nu.pred.beta <- as.numeric(predict(x[[1]]$nuObj, newdata=beta.newdata)) # predict nu on beta.newdata
     ## note: - there is no betaObj so we can't predict beta directly (only through nu)
-    ##       - we predict xi and nu both on beta.newdata since that's what we need
+    ##       - we predict eta and nu both on beta.newdata since that's what we need
     ##         to predict beta (see below)
 
     ## result
-    list(xi   = list(covar   = if(length(x[[1]]$xi.covar)>0) xi.newdata else NULL, # covariate combinations as specified by newdata
-                     predict = xi.pred), # predicted xi
-         beta = list(covar   = if(length(x[[1]]$xi.covar)>0 || length(x[[1]]$nu.covar)>0)
+    list(xi   = list(covar   = if(length(x[[1]]$eta.covar)>0) xi.newdata else NULL, # covariate combinations as specified by newdata
+                     predict = expm1(eta.pred)), # predicted xi
+         beta = list(covar   = if(length(x[[1]]$eta.covar)>0 || length(x[[1]]$nu.covar)>0)
                                    beta.newdata else NULL, # covariate combinations as specified by newdata
-                     predict = exp(nu.pred.beta)/(1+xi.pred.beta))) # predicted beta
+                     predict = exp(nu.pred.beta - eta.pred.beta))) # predicted beta
 }
 
 
@@ -787,7 +786,7 @@ GPD.predict <- function(x, xi.newdata=NULL, beta.newdata=NULL)
 ##' @param u threshold
 ##' @param method either "VaR" for Value-at-Risk or "ES" for expected shortfall
 ##' @return Value-at-Risk or expected shortfall
-risk.measure <- function(x, alpha, u, method=c("VaR", "ES"))
+risk.measure <- function(x, alpha, u, method = c("VaR", "ES"))
 {
     if(!is.matrix(x)) x <- rbind(x, deparse.level=0L)
     stopifnot(ncol(x)==3)
