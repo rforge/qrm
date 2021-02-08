@@ -45,8 +45,9 @@
 ##' @title Reparameterized log-Likelihood l^r
 ##' @param y vector of excesses (over a high threshold u)
 ##' @param eta vector of GPD(xi, beta) parameters eta (= log(1+xi))
-##' @param nu vector of GPD(xi, beta) parameters nu (= log(beta*(1+xi)) = log(beta)+eta)
-##'        (orthogonal to xi in the Fisher information metric)
+##' @param nu vector of GPD(xi, beta) parameters nu (= log(beta*(1+xi)) = log(beta)+eta);
+##'        orthogonal to eta in the Fisher information metric: mixed derivative
+##'        (w.r.t. eta and nu) of the reparameterized log-likelihood is 0
 ##' @return reparametrized log-likelihood l^r
 ##' @author Marius Hofert
 rlogL <- function(y, eta, nu, verbose = TRUE)
@@ -114,7 +115,6 @@ adjustD <- function(x, order, verbose = TRUE)
 ##' @param y vector of excesses (over a high threshold u)
 ##' @param eta vector of GPD(xi, beta) parameters eta (= log(1+xi))
 ##' @param nu vector of GPD(xi, beta) parameters nu (= log(beta*(1+xi)) = log(beta)+eta)
-##'        (orthogonal to xi in the Fisher information metric)
 ##' @param adjust logical indicating whether non-real values of the derivatives are adjusted
 ##' @param verbose logical indicating whether modified arguments are printed
 ##' @return (n x 4) matrix containing the partial derivatives of the
