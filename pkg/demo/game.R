@@ -270,14 +270,14 @@ if(file.exists(sfile)){
     ##       - For the underlying gamGPDfitUp()'s gam() call to work properly, the 'by'
     ##         variable (here: group) *must* be a factor
     bootGPD <- gamGPDboot(x, B=B, threshold=u, datvar="loss",
-                          xiFrhs = ~ group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # interaction
-                          nuFrhs = ~ group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # interaction
+                          etaFrhs = ~ group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # interaction
+                          nuFrhs  = ~ group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # interaction
                           niter=niter, eps.xi=eps, eps.nu=eps)
     saveRDS(bootGPD, file=sfile) # save the bootstrapped object (takes ~ 5min!!!)
 }
 
 ## compute fitted values of xi, beta and CIs (pointwise bootstrapped)
-xibetaFit <- get.GPD.fit(bootGPD, alpha=a) # takes several s
+xibetaFit <- get.GPD.fit(bootGPD, alpha=a)
 
 ## compute predicted values
 xibetaPred <- GPD.predict(bootGPD)
@@ -469,7 +469,7 @@ xlim <- range(yrs)
 ylim <- c(min(VaR.fit$CI.low), max(VaR.fit$CI.up))
 
 ## layout
-doPDF <- TRUE
+doPDF <- FALSE
 if(doPDF) pdf("demo_VaR_0.999.pdf", width=9, height=5)
 layout.mat <- matrix(1:ngrp, ncol=ngrp, byrow=TRUE) # plot matrix layout
 layout.mat <- rbind(layout.mat, c(ngrp+1, ngrp+2)) # add plot regions for x axis label

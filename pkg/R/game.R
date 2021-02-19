@@ -673,13 +673,13 @@ get.GPD.fit <- function(x, alpha=0.05)
         rownames(covars) <- NULL
     }
 
-    ## now consider xi
-    xi.covars. <- x.[[1]]$xi.covar
+    ## now consider the eta covariates (and thus those of xi)
+    xi.covars. <- x.[[1]]$eta.covar
     if(length(xi.covars.) == 0) {
         xi.covar.index <- 1
         xi.covars <- data.frame()
     } else { # xi has at least one covariate => minimize to unique covariate combinations
-        xi.covar.nms <- names(xi.covars.) # names of covariates used for fitting xi
+        xi.covar.nms <- names(xi.covars.) # names of covariates used for fitting xi/eta
         xi.frml <- as.formula(paste("index ~", paste(rev(xi.covar.nms), collapse=" + ")))
         xi.covar.index <- aggregate(xi.frml, data=y, FUN=function(z) z[1])[,"index"] # pick out only first value (they are equal anyways)
         xi.covars <- y[xi.covar.index, xi.covar.nms, drop=FALSE] # minimal version
